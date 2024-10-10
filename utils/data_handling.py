@@ -18,10 +18,3 @@ def safe_int(value) -> int:
         return int(value)
     except (ValueError, TypeError):
         return 0
-
-
-def safe_float(value) -> float:
-    try:
-        return float(value) if value else 0.0
-    except ValueError:
-        return 0.0
