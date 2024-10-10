@@ -1,6 +1,10 @@
 from datetime import datetime, timedelta
+from typing import List, Dict
+import toolz as t
 
-from database.connect import area_statistics, daily_crashes, weekly_crashes, monthly_crashes
+from database.connect import area_statistics, daily_crashes, weekly_crashes, monthly_crashes, crashes
+from utils.data_handling import convert_object_ids_to_str
+
 
 
 def find_total_accidents_in_area(area: str) -> int:
@@ -8,7 +12,7 @@ def find_total_accidents_in_area(area: str) -> int:
     return area_data.get('total_accidents', 0) if area_data else 0
 
 
-def get_total_accidents(period, date, area):
+def find_total_accidents(period, date, area) -> int:
     # Parse the date to a standard format
     date_obj = datetime.strptime(date, '%Y-%m-%d')
 
@@ -39,4 +43,68 @@ def get_total_accidents(period, date, area):
 
     total_accidents = result['total_accidents'] if result else 0
     return total_accidents
+
+
+def find_accidents_grouped_by_cause(area: str) ->List[dict]:
+    area_document = area_statistics.find_one({'area': area})
+
+    if not area_document or not area_document.get('crash_ids'):
+        raise ValueError('Invalid area provided!')
+
+    crash_ids = area_document['crash_ids']
+    pipeline = [
+        {"$match": {"_id": {"$in": crash_ids}}},
+        {
+            "$group": {
+                "_id": "$contributing_factor",
+                "count": {"$sum": 1},
+                "crashes": {"$push": "$$ROOT"},
+                "total_injuries": {"$sum": "$injuries.total"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "contributing_factor": "$_id",
+                "count": 1,
+                "crashes": 1,
+                "total_injuries": 1
+            }
+        },
+        {"$sort": {"count": -1}}
+    ]
+
+    return t.pipe(
+        crashes.aggregate(pipeline),
+        list,
+        t.partial(convert_object_ids_to_str)
+    )
+
+
+def extract_area_statistics(area: str) -> Dict[str, List[str]]:
+    area_document = area_statistics.find_one({'area': area})
+
+    if not area_document:
+        raise ValueError('Invalid area provided!')
+
+    injuries = area_document.get('injuries', {})
+
+    crash_ids = area_document.get('crash_ids', [])
+
+    crash_documents = list(crashes.find({'_id': {'$in': crash_ids}}))
+
+    contributing_factors = [
+        crash['contributing_factor']
+        for crash in crash_documents
+        if crash['injuries']['total'] > 0
+    ]
+
+    return {
+        'injuries': injuries,
+        'contributing_factors': contributing_factors
+    }
+
+
+
+
 

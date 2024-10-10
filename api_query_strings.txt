@@ -1,0 +1,5 @@
+1. /initialize-db
+2. /api/crashes/area?beat=225
+3. /api/crashes/total?area=1651&period=week&date=2019-02-24
+4. /api/crashes/area/causes?beat=1234
+5. /api/crashes/area/statistics?beat=1034

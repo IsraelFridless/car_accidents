@@ -1,5 +1,0 @@
-1. /initialize-db
-2. /area?beat=225
-3. /area/time?beat=225&time_period=day&start_date=2000-01-01&end_date=2024-01-31
-4. /accidents/area/causes?beat=1234
-5. /area/injuries?beat=1034
