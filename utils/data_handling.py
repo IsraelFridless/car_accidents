@@ -10,13 +10,15 @@ def parse_date(date_str: str):
 def get_week_range(date):
     start = date - timedelta(days=date.weekday())
     end = start + timedelta(days=6)
-    return start.date(), end.date()
+    return start, end
+
 
 def safe_int(value) -> int:
     try:
         return int(value)
     except (ValueError, TypeError):
         return 0
+
 
 def safe_float(value) -> float:
     try:
